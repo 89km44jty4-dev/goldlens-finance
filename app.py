@@ -80,7 +80,7 @@ st.markdown("""
 # ==================================================
 # 2. CẤU HÌNH GEMINI
 # ==================================================
-MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
 
 @st.cache_resource
 def get_gemini_client():

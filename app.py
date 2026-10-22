@@ -403,130 +403,95 @@ def load_feedback(uploaded_file):
     return df.reset_index(drop=True)
 
 # ==================================================
-# 4. PHÂN LOẠI BẰNG GEMINI
-# ==================================================
-def parse_json(text):
-    text = (text or "").strip()
-    text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.I)
-    text = re.sub(r"\s*```$", "", text)
+# ---------------------------------------------------------
+# 4. PHÂN LOẠI GEMINI (TỐI ƯU BATCHING - SIÊU NHANH)
+# ---------------------------------------------------------
+with tab_classify:
+    st.subheader("Phân loại tự động (Product, Topic, Sentiment, Urgency)")
 
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        start = text.find("{")
-        end = text.rfind("}")
-        if start >= 0 and end > start:
-            return json.loads(text[start:end + 1])
-        raise ValueError("Gemini không trả về JSON hợp lệ.")
-
-def classify_one(feedback):
-    if client is None:
-        raise RuntimeError("Chưa cấu hình GEMINI_API_KEY.")
-
-    prompt = f"""
-Bạn là chuyên gia phân tích phản hồi khách hàng ngân hàng.
-Hãy phân loại feedback theo các danh sách sau:
-
-Product: {PRODUCTS}
-Topic: {TOPICS}
-Sentiment: {SENTIMENTS}
-Urgency: {URGENCIES}
-
-Critical: dấu hiệu mất tiền, gian lận hoặc rủi ro bảo mật nghiêm trọng.
-High: giao dịch quan trọng thất bại hoặc dịch vụ ngừng hoạt động.
-Medium: bất tiện nhưng khách vẫn sử dụng được.
-Low: góp ý nhỏ hoặc lời khen.
-
-Chỉ trả về một JSON object với đúng 4 khóa:
-Product, Topic, Sentiment, Urgency.
-Giữ nguyên ngôn ngữ của feedback khi suy luận ý nghĩa.
-Không thêm giải thích.
-
-Feedback:
-{str(feedback)[:3000]}
-"""
-
-    allowed = {
-        "Product": PRODUCTS,
-        "Topic": TOPICS,
-        "Sentiment": SENTIMENTS,
-        "Urgency": URGENCIES
-    }
-
-    last_error = None
-
-    for attempt in range(3):
-        try:
-            response = client.models.generate_content(
-                model=MODEL,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    temperature=0.1
-                )
-            )
-
-            data = parse_json(response.text)
-            result = {}
-
-            for field, choices in allowed.items():
-                value = str(data[field]).strip()
-                if value not in choices:
-                    raise ValueError(
-                        f"Nhãn {field} không nằm trong danh sách."
-                    )
-                result[field] = value
-
-            return result
-
-        except Exception as error:
-            last_error = error
-            if attempt < 2:
-                time.sleep(2 ** attempt)
-
-    raise RuntimeError(str(last_error))
-
-def classify_data(df):
-    out = df.copy()
-
-    for col in ["Product", "Topic", "Sentiment", "Urgency"]:
-        if col not in out.columns:
-            out[col] = ""
-        out[col] = out[col].fillna("").astype(str).str.strip()
-
-    progress = st.progress(0)
-    status = st.empty()
-    errors = []
-
-    for i in range(len(out)):
-        labels_exist = (
-            out.at[i, "Product"] in PRODUCTS
-            and out.at[i, "Topic"] in TOPICS
-            and out.at[i, "Sentiment"] in SENTIMENTS
-            and out.at[i, "Urgency"] in URGENCIES
+    if not api_key:
+        st.warning(
+            "⚠️ Vui lòng nhập Gemini API Key ở thanh bên (Sidebar) để tiếp"
+            " tục."
         )
+    else:
+        if st.button("🚀 Bắt đầu Phân loại bằng Gemini AI (Batch Mode)"):
+            client = genai.Client(api_key=api_key)
 
-        if not labels_exist:
-            try:
-                labels = classify_one(out.at[i, "Feedback_Text"])
-                for col, value in labels.items():
-                    out.at[i, col] = value
+            # Khởi tạo các cột kết quả
+            df["Product"] = ""
+            df["Topic"] = ""
+            df["Sentiment"] = ""
+            df["Urgency"] = ""
 
-            except Exception as error:
-                errors.append({
-                    "Feedback_ID": out.at[i, "Feedback_ID"],
-                    "Feedback_Text": out.at[i, "Feedback_Text"],
-                    "Error": str(error)
-                })
+            BATCH_SIZE = 15  # Gom 15 feedback thành 1 request
+            total_rows = len(df)
+            progress_bar = st.progress(0)
+            status_text = st.empty()
 
-        progress.progress((i + 1) / len(out))
-        status.info(f"Đang xử lý feedback {i + 1}/{len(out)}")
+            for start_idx in range(0, total_rows, BATCH_SIZE):
+                end_idx = min(start_idx + BATCH_SIZE, total_rows)
+                batch_df = df.iloc[start_idx:end_idx]
 
-    progress.empty()
-    status.empty()
+                # Chuẩn bị danh sách dạng JSON gọn nhẹ gửi cho Gemini
+                batch_data = [
+                    {"id": int(i), "text": str(row["Feedback_Text"])}
+                    for i, row in batch_df.iterrows()
+                ]
 
-    return out, pd.DataFrame(errors)
+                prompt = f"""
+                Bạn là chuyên gia phân tích VOC ngân hàng. Hãy phân loại danh sách feedback sau:
 
+                Quy tắc giá trị:
+                - Product: Mobile Banking, Transfer, ATM, Credit Card, Debit Card, Loan, Savings, Branch Service, Other
+                - Topic: Login, Transaction, App Performance, Fee, Customer Service, Security, ATM Failure, Card, Loan, Interest Rate, Other
+                - Sentiment: Positive, Neutral, Negative
+                - Urgency: Low, Medium, High, Critical
+
+                Danh sách Feedback:
+                {json.dumps(batch_data, ensure_ascii=False)}
+
+                Trả về duy nhất một mảng JSON chứa các object có cấu trúc:
+                [
+                  {{"id": 0, "Product": "...", "Topic": "...", "Sentiment": "...", "Urgency": "..."}},
+                  ...
+                ]
+                """
+
+                try:
+                    response = client.models.generate_content(
+                        model="gemini-2.0-flash",  # Sử dụng model gemini-2.0-flash chuẩn
+                        contents=prompt,
+                        config=types.GenerateContentConfig(
+                            response_mime_type="application/json"
+                        ),
+                    )
+
+                    results = json.loads(response.text)
+                    for item in results:
+                        idx = item.get("id")
+                        if idx in df.index:
+                            df.at[idx, "Product"] = item.get("Product", "Other")
+                            df.at[idx, "Topic"] = item.get("Topic", "Other")
+                            df.at[idx, "Sentiment"] = item.get(
+                                "Sentiment", "Neutral"
+                            )
+                            df.at[idx, "Urgency"] = item.get("Urgency", "Low")
+
+                except Exception as e:
+                    status_text.warning(
+                        f"⚠️ Lỗi xử lý từ dòng {start_idx} đến {end_idx}: {e}"
+                    )
+                    time.sleep(3)
+
+                # Tạm nghỉ 1s giữa các Batch để an toàn Quota
+                time.sleep(1)
+                progress_bar.progress(end_idx / total_rows)
+                status_text.text(f"Đã xử lý {end_idx}/{total_rows} dòng...")
+
+            st.session_state.df = df
+            st.session_state.processed = True
+            st.success("🎉 Hoàn tất phân loại toàn bộ dữ liệu siêu nhanh!")
 # ==================================================
 # 5. NATURAL TOPIC CLUSTERING
 # ==================================================

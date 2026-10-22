@@ -17,65 +17,272 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
 
 # ==================================================
-# 1. CẤU HÌNH VÀ GIAO DIỆN
+import streamlit as st
+
+# ==================================================
+# 1. CẤU HÌNH TRANG (PAGE CONFIG)
 # ==================================================
 st.set_page_config(
-    page_title="GoldLens Finance",
-    page_icon="🟡",
-    layout="wide"
+    page_title="GoldLens Finance | Executive Platform",
+    page_icon="👑",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
+# ==================================================
+# 2. GIAO DIỆN DARK LUXURY (CUSTOM CSS)
+# ==================================================
 st.markdown("""
 <style>
-.stApp {
-    background: #FFFDF6;
-    color: #302B1B;
-}
-[data-testid="stSidebar"] {
-    background: #FFF3C4;
-}
-.hero {
-    background: linear-gradient(120deg, #F4C430, #FFE99B, #FFF9E7);
-    border: 1px solid #E8CC65;
-    border-radius: 20px;
-    padding: 26px 30px;
-    margin-bottom: 20px;
-    color: #302600;
-}
-.hero h1 {
-    margin-bottom: 4px;
-    font-size: 38px;
-}
-.hero p {
-    font-size: 16px;
-    margin-bottom: 0;
-}
-div.stButton > button,
-div.stDownloadButton > button {
-    background: #F4C430;
-    color: #302600;
-    border: 1px solid #D6B221;
-    border-radius: 10px;
-    font-weight: 700;
-}
-[data-testid="stMetric"] {
-    background: #FFFFFF;
-    border: 1px solid #F0E2A0;
-    border-radius: 14px;
-    padding: 12px;
-}
-a {
-    color: #8A6900 !important;
-}
+    /* Import Font chữ cao cấp */
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+
+    html, body, [class*="css"] {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    /* 1. Nền tổng thể Dark Obsidian */
+    .stApp {
+        background-color: #0A0C10;
+        color: #E2E8F0;
+    }
+
+    /* 2. Sidebar Cao Cấp */
+    [data-testid="stSidebar"] {
+        background-color: #11141C !important;
+        border-right: 1px solid rgba(212, 175, 55, 0.15);
+    }
+    
+    [data-testid="stSidebar"] * {
+        color: #C5C9D3 !important;
+    }
+
+    /* 3. Hero Banner Dark Luxe */
+    .hero-container {
+        background: linear-gradient(135deg, rgba(20, 24, 33, 0.9) 0%, rgba(10, 12, 16, 0.95) 100%);
+        border: 1px solid rgba(212, 175, 55, 0.3);
+        border-radius: 16px;
+        padding: 32px 40px;
+        margin-bottom: 28px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 215, 0, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .hero-title-gradient {
+        background: linear-gradient(135deg, #BF953F 0%, #FCF6BA 25%, #B38728 50%, #FBF5B7 75%, #AA771C 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-size: 36px;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        margin: 0;
+    }
+
+    .hero-subtitle {
+        color: #94A3B8;
+        font-size: 15px;
+        font-weight: 400;
+        margin-top: 6px;
+        letter-spacing: 0.5px;
+    }
+
+    .status-badge {
+        background: rgba(212, 175, 55, 0.1);
+        border: 1px solid rgba(212, 175, 55, 0.4);
+        color: #F3E5AB;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+    }
+
+    /* 4. Thẻ Metrics Tài Chính */
+    [data-testid="stMetric"] {
+        background: #141821;
+        border: 1px solid rgba(212, 175, 55, 0.2);
+        border-radius: 12px;
+        padding: 16px 20px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    
+    [data-testid="stMetric"]:hover {
+        border-color: rgba(212, 175, 55, 0.6);
+        transform: translateY(-2px);
+    }
+
+    [data-testid="stMetricLabel"] {
+        color: #8A94A6 !important;
+        font-size: 13px !important;
+        font-weight: 500 !important;
+    }
+
+    [data-testid="stMetricValue"] {
+        color: #F5E6AD !important;
+        font-size: 26px !important;
+        font-weight: 700 !important;
+    }
+
+    /* 5. Nút bấm Metallic Gold */
+    div.stButton > button, div.stDownloadButton > button {
+        background: linear-gradient(135deg, #D4AF37 0%, #AA771C 100%) !important;
+        color: #0A0C10 !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: 700 !important;
+        font-size: 14px !important;
+        padding: 10px 24px !important;
+        box-shadow: 0 4px 12px rgba(212, 175, 55, 0.25) !important;
+        transition: all 0.3s ease !important;
+    }
+
+    div.stButton > button:hover, div.stDownloadButton > button:hover {
+        background: linear-gradient(135deg, #FFE885 0%, #D4AF37 100%) !important;
+        box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4) !important;
+        transform: translateY(-1px);
+    }
+
+    /* 6. Tabs & Input Styling */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        background-color: transparent;
+        border-radius: 6px 6px 0 0;
+        color: #8A94A6;
+        padding: 10px 20px;
+        font-weight: 600;
+    }
+
+    .stTabs [aria-selected="true"] {
+        background-color: rgba(212, 175, 55, 0.1) !important;
+        color: #F3E5AB !important;
+        border-bottom: 2px solid #D4AF37 !important;
+    }
+
+    /* Hide Header / Streamlit Footer */
+    header[data-testid="stHeader"] {
+        background: transparent;
+    }
+    footer {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
 
+# ==================================================
+# 3. SIDEBAR & SẮP XẾP DANH MỤC CHUYÊN NGHIỆP
+# ==================================================
+with st.sidebar:
+    # Branding / Logo trên Sidebar
+    st.markdown("""
+        <div style="display: flex; align-items: center; gap: 12px; padding: 10px 0 25px 0; border-bottom: 1px solid rgba(212,175,55,0.15);">
+            <svg width="36" height="36" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="50" cy="50" r="45" stroke="url(#gold-grad)" stroke-width="6"/>
+                <path d="M50 20 L63 40 L85 50 L63 60 L50 80 L37 60 L15 50 L37 40 Z" fill="url(#gold-grad)"/>
+                <defs>
+                    <linearGradient id="gold-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#FCF6BA" />
+                        <stop offset="50%" stop-color="#D4AF37" />
+                        <stop offset="100%" stop-color="#AA771C" />
+                    </linearGradient>
+                </defs>
+            </svg>
+            <div>
+                <div style="font-size: 18px; font-weight: 800; color: #F3E5AB; letter-spacing: 0.5px;">GOLDLENS</div>
+                <div style="font-size: 10px; color: #788294; letter-spacing: 1.5px; text-transform: uppercase;">FINANCE PLATFORM</div>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Navigation Menu Phân loại Chuyên nghiệp
+    st.caption("MAIN MENU")
+    
+    selected_page = st.radio(
+        label="Điều hướng chính",
+        options=[
+            "📊 Executive Dashboard",
+            "👤 Customer Intelligence",
+            "💰 Financial Insights",
+            "📈 Market & Gold News",
+            "⚙️ System Settings"
+        ],
+        label_visibility="collapsed"
+    )
+
+    st.markdown("---")
+    
+    # Bộ lọc nhanh (Quick Filters) ở Sidebar
+    st.caption("QUICK FILTERS")
+    time_frame = st.selectbox("Khung thời gian", ["Hôm nay", "7 ngày qua", "Tháng này", "Quý này", "Năm 2026"])
+    segment = st.selectbox("Phân khúc khách hàng", ["Tất cả", "VIP Gold", "Premium", "Chính thức"])
+
+# ==================================================
+# 4. HERO BANNER CHÍNH
+# ==================================================
 st.markdown("""
-<div class="hero">
-    <h1>🟡 GoldLens Finance</h1>
-    <p>Customer Intelligence · Financial Insights · Market News</p>
+<div class="hero-container">
+    <div style="display: flex; align-items: center; gap: 20px;">
+        <!-- Logo SVG Vàng Ánh Kim -->
+        <svg width="60" height="60" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="50" cy="50" r="44" stroke="url(#hero-gold)" stroke-width="5"/>
+            <polygon points="50,15 62,38 85,50 62,62 50,85 38,62 15,50 38,38" fill="url(#hero-gold)"/>
+            <circle cx="50" cy="50" r="8" fill="#0A0C10"/>
+            <defs>
+                <linearGradient id="hero-gold" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#FFE99B" />
+                    <stop offset="30%" stop-color="#D4AF37" />
+                    <stop offset="70%" stop-color="#AA771C" />
+                    <stop offset="100%" stop-color="#6B4C0B" />
+                </linearGradient>
+            </defs>
+        </svg>
+        <div>
+            <h1 class="hero-title-gradient">GoldLens Finance</h1>
+            <p class="hero-subtitle">Nền tảng Phân tích Tài chính & Trí tuệ Khách hàng Trọng yếu</p>
+        </div>
+    </div>
+    <div class="status-badge">
+        ● Live Analytics
+    </div>
 </div>
 """, unsafe_allow_html=True)
+
+# ==================================================
+# 5. DEMO THỬ NGHIỆM GIAO DIỆN (CHỈ SỐ THỬ)
+# ==================================================
+col1, col2, col3, col4 = st.columns(4)
+
+with col1:
+    st.metric(label="Tổng Doanh Thu", value="$2,450,000", delta="+12.5%")
+
+with col2:
+    st.metric(label="Giá Vàng SJC (Mua/Bán)", value="89.50 triệu", delta="+0.8 triệu")
+
+with col3:
+    st.metric(label="Khách Hàng Mới", value="1,240", delta="+18%")
+
+with col4:
+    st.metric(label="Chỉ Số Lợi Nhuận", value="34.2%", delta="-1.1%")
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+# Tabs phân tích
+tab1, tab2 = st.tabs(["Overview", "Detailed Report"])
+
+with tab1:
+    st.subheader("Biểu đồ / Nội dung chính của trang")
+    st.info(f"Bạn đang xem chuyên mục: **{selected_page}** với bộ lọc **{time_frame}**.")
+    st.button("Xuất Báo Cáo (PDF/Excel)")
+
+with tab2:
+    st.write("Nội dung chi tiết sẽ hiển thị tại đây...")
 
 # ==================================================
 # 2. CẤU HÌNH GEMINI

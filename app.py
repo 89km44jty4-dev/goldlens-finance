@@ -20,167 +20,158 @@ from sklearn.cluster import KMeans
 import streamlit as st
 
 # ==================================================
-# 1. CẤU HÌNH TRANG (PAGE CONFIG)
+import streamlit as st
+import pandas as pd
+import numpy as np
+import plotly.graph_objects as go
+
+# ==================================================
+# 1. CẤU HÌNH TRANG
 # ==================================================
 st.set_page_config(
-    page_title="GoldLens Finance | Executive Platform",
+    page_title="GoldLens Feedback Analytics",
     page_icon="👑",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
 # ==================================================
-# 2. GIAO DIỆN DARK LUXURY (CUSTOM CSS)
+# 2. GIAO DIỆN DARK LUXE (CUSTOM CSS)
 # ==================================================
 st.markdown("""
 <style>
-    /* Import Font chữ cao cấp */
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
 
     html, body, [class*="css"] {
         font-family: 'Plus Jakarta Sans', sans-serif;
     }
 
-    /* 1. Nền tổng thể Dark Obsidian */
+    /* Nền ứng dụng Dark Obsidian / Carbon */
     .stApp {
         background-color: #0A0C10;
         color: #E2E8F0;
     }
 
-    /* 2. Sidebar Cao Cấp */
+    /* Thanh Sidebar */
     [data-testid="stSidebar"] {
         background-color: #11141C !important;
-        border-right: 1px solid rgba(212, 175, 55, 0.15);
+        border-right: 1px solid rgba(212, 175, 55, 0.2);
     }
     
     [data-testid="stSidebar"] * {
         color: #C5C9D3 !important;
     }
 
-    /* 3. Hero Banner Dark Luxe */
-    .hero-container {
-        background: linear-gradient(135deg, rgba(20, 24, 33, 0.9) 0%, rgba(10, 12, 16, 0.95) 100%);
-        border: 1px solid rgba(212, 175, 55, 0.3);
-        border-radius: 16px;
-        padding: 32px 40px;
-        margin-bottom: 28px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 215, 0, 0.2);
+    /* Header Container */
+    .header-container {
         display: flex;
-        align-items: center;
         justify-content: space-between;
+        align-items: center;
+        background: linear-gradient(135deg, rgba(20, 24, 33, 0.95) 0%, rgba(10, 12, 16, 0.98) 100%);
+        border: 1px solid rgba(212, 175, 55, 0.25);
+        border-radius: 14px;
+        padding: 20px 30px;
+        margin-bottom: 25px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.4);
     }
 
-    .hero-title-gradient {
+    .brand-title {
         background: linear-gradient(135deg, #BF953F 0%, #FCF6BA 25%, #B38728 50%, #FBF5B7 75%, #AA771C 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        font-size: 36px;
+        font-size: 26px;
         font-weight: 800;
-        letter-spacing: -0.5px;
+        letter-spacing: 0.5px;
         margin: 0;
     }
 
-    .hero-subtitle {
-        color: #94A3B8;
-        font-size: 15px;
-        font-weight: 400;
-        margin-top: 6px;
-        letter-spacing: 0.5px;
+    .brand-subtitle {
+        color: #8A94A6;
+        font-size: 13px;
+        margin: 3px 0 0 0;
     }
 
-    .status-badge {
-        background: rgba(212, 175, 55, 0.1);
-        border: 1px solid rgba(212, 175, 55, 0.4);
+    /* Tiêu đề từng Section */
+    .section-title {
         color: #F3E5AB;
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 600;
-        letter-spacing: 1px;
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        margin-bottom: 12px;
         text-transform: uppercase;
     }
 
-    /* 4. Thẻ Metrics Tài Chính */
+    /* Tùy chỉnh Khung Upload File */
+    [data-testid="stFileUploader"] {
+        background: rgba(20, 24, 33, 0.7);
+        border: 2px dashed rgba(212, 175, 55, 0.5) !important;
+        border-radius: 14px !important;
+        padding: 15px;
+        text-align: center;
+    }
+    [data-testid="stFileUploader"]:hover {
+        border-color: #D4AF37 !important;
+    }
+
+    /* Metrics Tài chính / Phản hồi */
     [data-testid="stMetric"] {
         background: #141821;
         border: 1px solid rgba(212, 175, 55, 0.2);
         border-radius: 12px;
         padding: 16px 20px;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        transition: transform 0.2s ease, border-color 0.2s ease;
     }
-    
-    [data-testid="stMetric"]:hover {
-        border-color: rgba(212, 175, 55, 0.6);
-        transform: translateY(-2px);
-    }
-
     [data-testid="stMetricLabel"] {
         color: #8A94A6 !important;
         font-size: 13px !important;
-        font-weight: 500 !important;
     }
-
     [data-testid="stMetricValue"] {
         color: #F5E6AD !important;
         font-size: 26px !important;
         font-weight: 700 !important;
     }
 
-    /* 5. Nút bấm Metallic Gold */
+    /* Nút bấm Vàng Gold */
     div.stButton > button, div.stDownloadButton > button {
         background: linear-gradient(135deg, #D4AF37 0%, #AA771C 100%) !important;
         color: #0A0C10 !important;
         border: none !important;
         border-radius: 8px !important;
         font-weight: 700 !important;
-        font-size: 14px !important;
         padding: 10px 24px !important;
         box-shadow: 0 4px 12px rgba(212, 175, 55, 0.25) !important;
-        transition: all 0.3s ease !important;
     }
-
     div.stButton > button:hover, div.stDownloadButton > button:hover {
         background: linear-gradient(135deg, #FFE885 0%, #D4AF37 100%) !important;
-        box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4) !important;
-        transform: translateY(-1px);
     }
 
-    /* 6. Tabs & Input Styling */
+    /* Style Tab */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
         border-bottom: 1px solid rgba(212, 175, 55, 0.2);
     }
-
     .stTabs [data-baseweb="tab"] {
         background-color: transparent;
-        border-radius: 6px 6px 0 0;
         color: #8A94A6;
-        padding: 10px 20px;
         font-weight: 600;
     }
-
     .stTabs [aria-selected="true"] {
         background-color: rgba(212, 175, 55, 0.1) !important;
         color: #F3E5AB !important;
         border-bottom: 2px solid #D4AF37 !important;
     }
 
-    /* Hide Header / Streamlit Footer */
-    header[data-testid="stHeader"] {
-        background: transparent;
-    }
-    footer {visibility: hidden;}
+    header[data-testid="stHeader"] { background: transparent; }
+    footer { visibility: hidden; }
 </style>
 """, unsafe_allow_html=True)
 
 # ==================================================
-# 3. SIDEBAR & SẮP XẾP DANH MỤC CHUYÊN NGHIỆP
+# 3. SIDEBAR NAVIGATION
 # ==================================================
 with st.sidebar:
-    # Branding / Logo trên Sidebar
     st.markdown("""
-        <div style="display: flex; align-items: center; gap: 12px; padding: 10px 0 25px 0; border-bottom: 1px solid rgba(212,175,55,0.15);">
+        <div style="display: flex; align-items: center; gap: 12px; padding: 10px 0 20px 0; border-bottom: 1px solid rgba(212,175,55,0.15);">
             <svg width="36" height="36" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="50" cy="50" r="45" stroke="url(#gold-grad)" stroke-width="6"/>
                 <path d="M50 20 L63 40 L85 50 L63 60 L50 80 L37 60 L15 50 L37 40 Z" fill="url(#gold-grad)"/>
@@ -193,96 +184,163 @@ with st.sidebar:
                 </defs>
             </svg>
             <div>
-                <div style="font-size: 18px; font-weight: 800; color: #F3E5AB; letter-spacing: 0.5px;">GOLDLENS</div>
-                <div style="font-size: 10px; color: #788294; letter-spacing: 1.5px; text-transform: uppercase;">FINANCE PLATFORM</div>
+                <div style="font-size: 16px; font-weight: 800; color: #F3E5AB;">GOLDLENS</div>
+                <div style="font-size: 10px; color: #788294; letter-spacing: 1px;">FEEDBACK ANALYTICS</div>
             </div>
         </div>
     """, unsafe_allow_html=True)
     
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # Navigation Menu Phân loại Chuyên nghiệp
-    st.caption("MAIN MENU")
-    
     selected_page = st.radio(
-        label="Điều hướng chính",
+        label="Menu điều hướng",
         options=[
-            "📊 Executive Dashboard",
-            "👤 Customer Intelligence",
-            "💰 Financial Insights",
-            "📈 Market & Gold News",
-            "⚙️ System Settings"
+            "🏠 Tổng quan",
+            "🗄️ Nguồn dữ liệu",
+            "📊 Phân tích phản hồi",
+            "📄 Báo cáo chuyên sâu",
+            "⚙️ Cài đặt"
         ],
         label_visibility="collapsed"
     )
 
     st.markdown("---")
-    
-    # Bộ lọc nhanh (Quick Filters) ở Sidebar
-    st.caption("QUICK FILTERS")
-    time_frame = st.selectbox("Khung thời gian", ["Hôm nay", "7 ngày qua", "Tháng này", "Quý này", "Năm 2026"])
-    segment = st.selectbox("Phân khúc khách hàng", ["Tất cả", "VIP Gold", "Premium", "Chính thức"])
+    st.caption("BỘ LỌC DỮ LIỆU")
+    st.selectbox("Nguồn phản hồi", ["Tất cả", "Google Forms", "Zendesk", "File Upload"])
+    st.selectbox("Khoảng thời gian", ["12 tháng qua", "6 tháng qua", "30 ngày qua"])
 
 # ==================================================
-# 4. HERO BANNER CHÍNH
+# 4. HEADER BAR
 # ==================================================
 st.markdown("""
-<div class="hero-container">
-    <div style="display: flex; align-items: center; gap: 20px;">
-        <!-- Logo SVG Vàng Ánh Kim -->
-        <svg width="60" height="60" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="50" cy="50" r="44" stroke="url(#hero-gold)" stroke-width="5"/>
-            <polygon points="50,15 62,38 85,50 62,62 50,85 38,62 15,50 38,38" fill="url(#hero-gold)"/>
+<div class="header-container">
+    <div style="display: flex; align-items: center; gap: 16px;">
+        <svg width="48" height="48" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="50" cy="50" r="44" stroke="url(#header-gold)" stroke-width="5"/>
+            <polygon points="50,15 62,38 85,50 62,62 50,85 38,62 15,50 38,38" fill="url(#header-gold)"/>
             <circle cx="50" cy="50" r="8" fill="#0A0C10"/>
             <defs>
-                <linearGradient id="hero-gold" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient id="header-gold" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stop-color="#FFE99B" />
-                    <stop offset="30%" stop-color="#D4AF37" />
-                    <stop offset="70%" stop-color="#AA771C" />
-                    <stop offset="100%" stop-color="#6B4C0B" />
+                    <stop offset="50%" stop-color="#D4AF37" />
+                    <stop offset="100%" stop-color="#AA771C" />
                 </linearGradient>
             </defs>
         </svg>
         <div>
-            <h1 class="hero-title-gradient">GoldLens Finance</h1>
-            <p class="hero-subtitle">Nền tảng Phân tích Tài chính & Trí tuệ Khách hàng Trọng yếu</p>
+            <h1 class="brand-title">GOLDLENS FEEDBACK ANALYTICS</h1>
+            <p class="brand-subtitle">Thấu hiểu phản hồi, nâng tầm dịch vụ</p>
         </div>
     </div>
-    <div class="status-badge">
-        ● Live Analytics
+    <div style="display: flex; align-items: center; gap: 12px;">
+        <span style="color: #4ADE80; font-size: 13px;">● Live Analytics</span>
+        <div style="background: rgba(212,175,55,0.15); border: 1px solid rgba(212,175,55,0.3); padding: 6px 14px; border-radius: 20px; font-size: 13px; color: #F3E5AB;">
+            👤 Trrdng hoc
+        </div>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
 # ==================================================
-# 5. DEMO THỬ NGHIỆM GIAO DIỆN (CHỈ SỐ THỬ)
+# 5. SECTION 1: UPLOAD DỮ LIỆU PHẢN HỒI
+# ==================================================
+st.markdown('<p class="section-title">SECTION 1: TẢI LÊN DỮ LIỆU PHẢN HỒI KHÁCH HÀNG</p>', unsafe_allow_html=True)
+
+uploaded_file = st.file_uploader(
+    "Kéo thả tệp dữ liệu phản hồi của bạn tại đây hoặc nhấp để chọn (.csv, .xlsx)",
+    type=["csv", "xlsx"]
+)
+
+if uploaded_file is not None:
+    try:
+        if uploaded_file.name.endswith('.csv'):
+            df_uploaded = pd.read_csv(uploaded_file)
+        else:
+            df_uploaded = pd.read_excel(uploaded_file)
+        st.success(f"Đã tải lên thành công tệp **{uploaded_file.name}** với {len(df_uploaded)} dòng dữ liệu.")
+    except Exception as e:
+        st.error(f"Lỗi khi đọc tệp: {e}")
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+# ==================================================
+# 6. THỎA MẬN METRICS THEO GIAO DIỆN MẪU
 # ==================================================
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    st.metric(label="Tổng Doanh Thu", value="$2,450,000", delta="+12.5%")
+    st.metric(label="💬 Tổng phản hồi đã xử lý", value="15,240", delta="+5% tháng này")
 
 with col2:
-    st.metric(label="Giá Vàng SJC (Mua/Bán)", value="89.50 triệu", delta="+0.8 triệu")
+    st.metric(label="🙂 Cảm xúc Tích cực", value="68%", delta="+68% tháng này")
 
 with col3:
-    st.metric(label="Khách Hàng Mới", value="1,240", delta="+18%")
+    st.metric(label="☹️ Cảm xúc Tiêu cực", value="18%", delta="-18% tháng này")
 
 with col4:
-    st.metric(label="Chỉ Số Lợi Nhuận", value="34.2%", delta="-1.1%")
+    st.metric(label="👥 Các chủ đề chính", value="Thời gian, Thái độ")
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# Tabs phân tích
-tab1, tab2 = st.tabs(["Overview", "Detailed Report"])
+# ==================================================
+# 7. BIỂU ĐỒ XU HƯỚNG CẢM XÚC
+# ==================================================
+st.subheader("Xu hướng cảm xúc khách hàng theo thời gian")
 
-with tab1:
-    st.subheader("Biểu đồ / Nội dung chính của trang")
-    st.info(f"Bạn đang xem chuyên mục: **{selected_page}** với bộ lọc **{time_frame}**.")
-    st.button("Xuất Báo Cáo (PDF/Excel)")
+months = [f"{i} tháng" for i in range(1, 13)]
+positive_trend = [48, 70, 58, 75, 52, 58, 88, 62, 92, 48, 108, 52]
+negative_trend = [42, 20, 52, 30, 42, 32, 22, 38, 82, 28, 58, 48]
+neutral_trend  = [42, 48, 42, 52, 48, 58, 38, 65, 68, 55, 52, 45]
 
-with tab2:
-    st.write("Nội dung chi tiết sẽ hiển thị tại đây...")
+fig = go.Figure()
+
+fig.add_trace(go.Scatter(
+    x=months, y=positive_trend, mode='lines+markers', name='Positive',
+    line=dict(color='#22C55E', width=2),
+    fill='tonexty', fillcolor='rgba(34, 197, 94, 0.08)'
+))
+
+fig.add_trace(go.Scatter(
+    x=months, y=negative_trend, mode='lines+markers', name='Negative',
+    line=dict(color='#EF4444', width=2),
+    fill='tonexty', fillcolor='rgba(239, 68, 68, 0.08)'
+))
+
+fig.add_trace(go.Scatter(
+    x=months, y=neutral_trend, mode='lines+markers', name='Neutral',
+    line=dict(color='#EAB308', width=2),
+    fill='tonexty', fillcolor='rgba(234, 179, 8, 0.08)'
+))
+
+fig.update_layout(
+    paper_bgcolor='#141821',
+    plot_bgcolor='#141821',
+    margin=dict(l=20, r=20, t=30, b=30),
+    xaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.05)', color='#8A94A6'),
+    yaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.05)', color='#8A94A6'),
+    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(color='#C5C9D3')),
+    height=360
+)
+
+st.plotly_chart(fig, use_container_width=True)
+
+# ==================================================
+# 8. KHAI BÁO TABS & SỬA LỖI NAMEERROR `tab_classify`
+# ==================================================
+# Đã khai báo đầy đủ tab_classify giúp sửa triệt để lỗi NameError
+tab_overview, tab_classify, tab_keywords = st.tabs(["Tổng quan", "Phân loại chi tiết", "Từ khóa"])
+
+with tab_overview:
+    st.write("📌 **Tổng quan chi tiết:** Nhấp vào các phân mục để xem phân tích dữ liệu chuyên sâu.")
+    st.button("Xuất báo cáo (PDF/Excel)")
+
+with tab_classify:
+    st.subheader("Phân loại chi tiết phản hồi")
+    st.write("Danh sách các phản hồi đã được mô hình AI phân loại theo cảm xúc và chủ đề.")
+
+with tab_keywords:
+    st.subheader("Từ khóa nổi bật (Word Cloud / Frequency)")
+    st.write("Các từ khóa được khách hàng nhắc đến nhiều nhất trong các phản hồi gần đây.")
 
 # ==================================================
 # 2. CẤU HÌNH GEMINI

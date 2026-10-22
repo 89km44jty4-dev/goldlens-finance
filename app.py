@@ -18,7 +18,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
 
 # ==================================================
-# 1. CẤU HÌNH TRANG & GIAO DIỆN DARK LUXE (CUSTOM CSS)
+# 1. CẤU HÌNH TRANG
 # ==================================================
 st.set_page_config(
     page_title="GoldLens Feedback Analytics",
@@ -27,7 +27,10 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-st.markdown("""
+# ==================================================
+# 2. GIAO DIỆN DARK LUXE (CUSTOM CSS)
+# ==================================================
+DARK_LUXE_STYLE = """
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
 
@@ -35,13 +38,11 @@ st.markdown("""
         font-family: 'Plus Jakarta Sans', sans-serif;
     }
 
-    /* Nền ứng dụng Dark Obsidian / Carbon */
     .stApp {
         background-color: #0A0C10;
         color: #E2E8F0;
     }
 
-    /* Thanh Sidebar */
     [data-testid="stSidebar"] {
         background-color: #11141C !important;
         border-right: 1px solid rgba(212, 175, 55, 0.2);
@@ -51,7 +52,6 @@ st.markdown("""
         color: #C5C9D3 !important;
     }
 
-    /* Header Container */
     .header-container {
         display: flex;
         justify-content: space-between;
@@ -80,7 +80,6 @@ st.markdown("""
         margin: 3px 0 0 0;
     }
 
-    /* Tiêu đề từng Section */
     .section-title {
         color: #F3E5AB;
         font-size: 15px;
@@ -90,7 +89,6 @@ st.markdown("""
         text-transform: uppercase;
     }
 
-    /* Tùy chỉnh Khung Upload File */
     [data-testid="stFileUploader"] {
         background: rgba(20, 24, 33, 0.7);
         border: 2px dashed rgba(212, 175, 55, 0.5) !important;
@@ -102,7 +100,6 @@ st.markdown("""
         border-color: #D4AF37 !important;
     }
 
-    /* Metrics Tài chính / Phản hồi */
     [data-testid="stMetric"] {
         background: #141821;
         border: 1px solid rgba(212, 175, 55, 0.2);
@@ -120,7 +117,6 @@ st.markdown("""
         font-weight: 700 !important;
     }
 
-    /* Nút bấm Vàng Gold */
     div.stButton > button, div.stDownloadButton > button {
         background: linear-gradient(135deg, #D4AF37 0%, #AA771C 100%) !important;
         color: #0A0C10 !important;
@@ -134,7 +130,6 @@ st.markdown("""
         background: linear-gradient(135deg, #FFE885 0%, #D4AF37 100%) !important;
     }
 
-    /* Style Tab */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
         border-bottom: 1px solid rgba(212, 175, 55, 0.2);
@@ -153,10 +148,11 @@ st.markdown("""
     header[data-testid="stHeader"] { background: transparent; }
     footer { visibility: hidden; }
 </style>
-""", unsafe_allow_html=True)
+"""
+st.markdown(DARK_LUXE_STYLE, unsafe_allow_html=True)
 
 # ==================================================
-# 2. KHỞI TẠO SESSION STATE & CẤU HÌNH GEMINI
+# 3. KHỞI TẠO SESSION STATE & CLIENT GEMINI
 # ==================================================
 if "voc_df" not in st.session_state:
     st.session_state.voc_df = None
@@ -177,32 +173,38 @@ def get_gemini_client(input_key=""):
         return None
 
 # ==================================================
-# 3. SIDEBAR NAVIGATION & BỘ LỌC
+# 4. SIDEBAR NAVIGATION & BỘ LỌC
 # ==================================================
+SIDEBAR_BRAND_HTML = """
+<div style="display: flex; align-items: center; gap: 12px; padding: 10px 0 20px 0; border-bottom: 1px solid rgba(212,175,55,0.15);">
+    <svg width="36" height="36" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="50" cy="50" r="45" stroke="url(#gold-grad)" stroke-width="6"/>
+        <path d="M50 20 L63 40 L85 50 L63 60 L50 80 L37 60 L15 50 L37 40 Z" fill="url(#gold-grad)"/>
+        <defs>
+            <linearGradient id="gold-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#FCF6BA" />
+                <stop offset="50%" stop-color="#D4AF37" />
+                <stop offset="100%" stop-color="#AA771C" />
+            </linearGradient>
+        </defs>
+    </svg>
+    <div>
+        <div style="font-size: 16px; font-weight: 800; color: #F3E5AB;">GOLDLENS</div>
+        <div style="font-size: 10px; color: #788294; letter-spacing: 1px;">FEEDBACK ANALYTICS</div>
+    </div>
+</div>
+"""
+
 with st.sidebar:
-    st.markdown("""
-        <div style="display: flex; align-items: center; gap: 12px; padding: 10px 0 20px 0; border-bottom: 1px solid rgba(212,175,55,0.15);">
-            <svg width="36" height="36" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="50" cy="50" r="45" stroke="url(#gold-grad)" stroke-width="6"/>
-                <path d="M50 20 L63 40 L85 50 L63 60 L50 80 L37 60 L15 50 L37 40 Z" fill="url(#gold-grad)"/>
-                <defs>
-                    <linearGradient id="gold-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#FCF6BA" />
-                        <stop offset="50%" stop-color="#D4AF37" />
-                        <stop offset="100%" stop-color="#AA771C" />
-                    </linearGradient>
-                </defs>
-            </svg>
-            <div>
-                <div style="font-size: 16px; font-weight: 800; color: #F3E5AB;">GOLDLENS</div>
-                <div style="font-size: 10px; color: #788294; letter-spacing: 1px;">FEEDBACK ANALYTICS</div>
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
-    
+    st.markdown(SIDEBAR_BRAND_HTML, unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
     
-    api_key_input = st.text_input("🔑 Gemini API Key", type="password", help="Nhập Gemini API Key của bạn nếu chưa cài biến môi trường")
+    api_key_input = st.text_input("🔑 Gemini API Key", type="password", help="Nhập Gemini API Key nếu chưa cài biến môi trường")
+    
+    # Cho phép người dùng tùy chọn hoặc sửa tên Model trực tiếp
+    model_choice = st.text_input("🤖 Tên Model Gemini:", value="gemini-3.8-flash", help="Mặc định sử dụng gemini-3.8-flash")
+    MODEL_NAME = model_choice.strip() or "gemini-3.8-flash"
+
     client = get_gemini_client(api_key_input)
 
     page = st.radio(
@@ -223,14 +225,14 @@ with st.sidebar:
 
     st.markdown("---")
     if client:
-        st.success("🟢 Gemini API đã sẵn sàng")
+        st.success(f"🟢 API sẵn sàng: {MODEL_NAME}")
     else:
         st.warning("🟡 Chưa kết nối Gemini API Key")
 
 # ==================================================
-# 4. HEADER BAR
+# 5. HEADER BAR
 # ==================================================
-st.markdown("""
+HEADER_HTML = """
 <div class="header-container">
     <div style="display: flex; align-items: center; gap: 16px;">
         <svg width="48" height="48" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -257,10 +259,11 @@ st.markdown("""
         </div>
     </div>
 </div>
-""", unsafe_allow_html=True)
+"""
+st.markdown(HEADER_HTML, unsafe_allow_html=True)
 
 # ==================================================
-# 5. HÀM XỬ LÝ DỮ LIỆU & AI (CÓ RETRY LỖI 429 RATE LIMIT)
+# 6. HÀM PHÂN TÍCH & RETRY LỖI 429
 # ==================================================
 def find_column(df, candidates):
     columns = {str(c).strip().lower().replace(" ", "_"): c for c in df.columns}
@@ -311,8 +314,8 @@ def load_feedback(uploaded_file):
     df["Feedback_Date"] = pd.to_datetime(df["Feedback_Date"], errors="coerce")
     return df.reset_index(drop=True)
 
-def classify_data_batch(df, client_obj, batch_size=15):
-    """Phân loại phản hồi theo Batch có bọc Retry xử lý triệt để lỗi 429 Rate Limit"""
+def classify_data_batch(df, client_obj, model_name, batch_size=15):
+    """Phân loại bằng Gemini với cơ chế tự động Retry khi gặp lỗi 429"""
     out_df = df.copy()
     out_df["Product"] = ""
     out_df["Topic"] = ""
@@ -353,15 +356,24 @@ def classify_data_batch(df, client_obj, batch_size=15):
         ]
         """
 
-        # Vòng lặp Retry xử lý lỗi 429
         while True:
             try:
                 response = client_obj.models.generate_content(
-                    model="gemini-3.8-flash ",
+                    model=model_name,
                     contents=prompt,
                     config=types.GenerateContentConfig(response_mime_type="application/json")
                 )
-                results = json.loads(response.text)
+                
+                clean_text = response.text.strip()
+                if clean_text.startswith("```json"):
+                    clean_text = clean_text[7:]
+                if clean_text.startswith("```"):
+                    clean_text = clean_text[3:]
+                if clean_text.endswith("```"):
+                    clean_text = clean_text[:-3]
+                clean_text = clean_text.strip()
+
+                results = json.loads(clean_text)
                 for item in results:
                     idx = item.get("id")
                     if idx in out_df.index:
@@ -373,15 +385,16 @@ def classify_data_batch(df, client_obj, batch_size=15):
             except Exception as e:
                 error_str = str(e)
                 if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
-                    status_text.warning(f"⏳ Bị nghẽn Quota (429) ở dòng {start_idx+1}-{end_idx}. Đang chờ 35 giây...")
+                    status_text.warning(f"⏳ Bị nghẽn Quota (429) dòng {start_idx+1}-{end_idx}. Tạm dừng 35 giây...")
                     time.sleep(35)
                 else:
+                    # Hiển thị chi tiết thông báo lỗi từ API
                     status_text.error(f"❌ Lỗi dòng {start_idx+1}-{end_idx}: {e}")
                     for idx in batch_df.index:
                         errors.append({"index": idx, "text": batch_df.at[idx, "Feedback_Text"], "error": str(e)})
                     break
 
-        time.sleep(3)  # Giữ nhịp để tránh quá tải
+        time.sleep(3)
         progress_bar.progress(end_idx / total_rows)
         status_text.text(f"Đã xử lý {end_idx}/{total_rows} dòng...")
 
@@ -437,10 +450,10 @@ def export_excel(df, errors):
 @st.cache_data(ttl=900, show_spinner=False)
 def get_vietstock_news():
     feeds = [
-        "https://vietstock.vn/732/chung-khoan.rss",
-        "https://vietstock.vn/733/doanh-nghiep.rss",
-        "https://vietstock.vn/734/tai-chinh.rss",
-        "https://vietstock.vn/761/kinh-te/vi-mo.rss"
+        "[https://vietstock.vn/732/chung-khoan.rss](https://vietstock.vn/732/chung-khoan.rss)",
+        "[https://vietstock.vn/733/doanh-nghiep.rss](https://vietstock.vn/733/doanh-nghiep.rss)",
+        "[https://vietstock.vn/734/tai-chinh.rss](https://vietstock.vn/734/tai-chinh.rss)",
+        "[https://vietstock.vn/761/kinh-te/vi-mo.rss](https://vietstock.vn/761/kinh-te/vi-mo.rss)"
     ]
     items = []
     for url in feeds:
@@ -467,7 +480,7 @@ def get_vietstock_news():
     return list(unique.values())
 
 # ==================================================
-# 6. NỘI DUNG CÁC TRANG (PAGES)
+# 7. NỘI DUNG CÁC TRANG (PAGES)
 # ==================================================
 
 # --------------------------------------------------
@@ -513,7 +526,7 @@ if page == "Trang chủ":
     c1, c2, c3 = st.columns(3)
     with c1:
         st.markdown("### 🧠 Customer Intelligence")
-        st.write("Phân loại tự động Sản phẩm, Chủ đề, Cảm xúc & Độ khẩn cấp bằng Gemini Flash.")
+        st.write(f"Phân loại tự động Sản phẩm, Chủ đề, Cảm xúc & Độ khẩn cấp bằng {MODEL_NAME}.")
     with c2:
         st.markdown("### 📊 Smart Dashboard")
         st.write("Biểu đồ tương tác thời gian thực, phát hiện cảnh báo sớm rủi ro dịch vụ.")
@@ -544,8 +557,8 @@ elif page == "Phân tích khách hàng":
                 if client is None:
                     st.error("⚠️ Vui lòng nhập Gemini API Key ở thanh bên (Sidebar) để chạy!")
                 else:
-                    with st.spinner("Đang phân loại phản hồi bằng Gemini AI (Batch Mode)..."):
-                        result, errors = classify_data_batch(preview, client)
+                    with st.spinner(f"Đang phân loại phản hồi bằng {MODEL_NAME}..."):
+                        result, errors = classify_data_batch(preview, client, MODEL_NAME)
 
                     with st.spinner("Đang gom cụm chủ đề tự nhiên (Clustering)..."):
                         result = make_clusters(result, number_of_clusters)
@@ -632,112 +645,4 @@ elif page == "Dashboard":
             )
 
 # --------------------------------------------------
-# TRANG 4: BÁO CÁO QUẢN TRỊ AI
-# --------------------------------------------------
-elif page == "Báo cáo quản trị AI":
-    st.title("📄 AI Management Summary")
-
-    df_res = st.session_state.voc_df
-
-    if df_res is None:
-        st.info("💡 Vui lòng phân tích dữ liệu ở trang **Phân tích khách hàng** trước khi tạo báo cáo.")
-    elif client is None:
-        st.warning("⚠️ Vui lòng cấu hình Gemini API Key ở Sidebar để sử dụng tính năng này.")
-    else:
-        st.write("Tạo báo cáo tổng hợp dành cho Ban Quản trị bằng mô hình Gemini AI.")
-
-        if st.button("✨ Sinh báo cáo quản trị AI", type="primary"):
-            stats = {
-                "total": int(len(df_res)),
-                "sentiment": df_res["Sentiment"].value_counts().to_dict(),
-                "urgency": df_res["Urgency"].value_counts().to_dict(),
-                "product": df_res["Product"].value_counts().to_dict(),
-                "topic": df_res["Topic"].value_counts().to_dict()
-            }
-
-            samples = df_res[["Feedback_Text", "Product", "Topic", "Sentiment", "Urgency"]].head(50).to_dict("records")
-
-            prompt = f"""
-Viết báo cáo quản trị bằng tiếng Việt từ dữ liệu VoC này.
-Cấu trúc:
-1. Tóm tắt điều hành
-2. Phát hiện nổi bật
-3. Rủi ro cần ưu tiên
-4. Nguyên nhân có thể có
-5. Khuyến nghị hành động
-6. Hạn chế của dữ liệu
-
-Không bịa số liệu. Phân biệt dữ kiện với giả thuyết.
-
-THỐNG KÊ:
-{json.dumps(stats, ensure_ascii=False)}
-
-MẪU FEEDBACK:
-{json.dumps(samples, ensure_ascii=False, default=str)}
-"""
-
-            # Retry loop xử lý lỗi 429 khi tạo báo cáo AI
-            while True:
-                try:
-                    with st.spinner("Đang khởi tạo báo cáo quản trị bằng Gemini AI..."):
-                        response = client.models.generate_content(
-                            model="gemini-3.8-flash",
-                            contents=prompt
-                        )
-                    st.session_state.voc_summary = response.text
-                    st.success("✓ Đã sinh báo cáo thành công!")
-                    break
-                except Exception as error:
-                    error_str = str(error)
-                    if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
-                        st.warning("⏳ Bị nghẽn Quota (429) ở Bước sinh báo cáo. Tạm dừng 35 giây...")
-                        time.sleep(35)
-                    else:
-                        st.error(f"❌ Lỗi khi sinh báo cáo: {error}")
-                        break
-
-        if st.session_state.voc_summary:
-            st.markdown("---")
-            st.markdown(st.session_state.voc_summary)
-            st.download_button(
-                "⬇️ Tải báo cáo TXT",
-                data=st.session_state.voc_summary,
-                file_name="GoldLens_Management_Summary.txt",
-                mime="text/plain"
-            )
-
-# --------------------------------------------------
-# TRANG 5: TIN TỨC VIETSTOCK
-# --------------------------------------------------
-elif page == "Tin tức Vietstock":
-    st.title("📰 Vietstock Financial News")
-    st.write("Cập nhật thông tin thị trường tài chính, chứng khoán và kinh tế từ Vietstock RSS.")
-
-    if st.button("🔄 Làm mới tin tức"):
-        get_vietstock_news.clear()
-
-    with st.spinner("Đang tải tin tức từ Vietstock..."):
-        news = get_vietstock_news()
-
-    if not news:
-        st.warning("Không lấy được dữ liệu RSS từ Vietstock lúc này. Vui lòng truy cập trực tiếp:")
-        st.markdown("[🔗 Mở Vietstock.vn](https://vietstock.vn/)")
-    else:
-        query = st.text_input("🔍 Tìm tin theo từ khóa:")
-        limit = st.selectbox("Số lượng tin hiển thị:", [10, 20, 30, 50], index=1)
-
-        if query:
-            news = [item for item in news if query.lower() in (item["title"] + " " + item["description"]).lower()]
-
-        st.caption(f"Tìm thấy {len(news)} tin tức.")
-
-        for item in news[:limit]:
-            st.markdown(f"### [{item['title']}]({item['link']})")
-            if item["published"]:
-                st.caption(f"Nguồn: Vietstock · {item['published']}")
-            if item["description"]:
-                st.write(item["description"][:500])
-            st.divider()
-
-st.sidebar.markdown("---")
-st.sidebar.caption("GoldLens Finance · Streamlit App")
+# TR
